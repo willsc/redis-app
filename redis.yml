@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+    name: redis
+spec:
+    serviceName: redis-svc
+    replicas: 1
+    selector:
+        matchLabels:
+            app: redis
+    template:
+        metadata:
+            labels:
+                app: redis
+        spec:
+            containers:
+            - name: redis
+              image: bitnami/redis:latest
+              env:
+                - name: REDIS_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                        name: redis-password
+                        key: redis-password
+              ports:
+              - containerPort: 6379
+                name: redis-port
+            initContainers:
+            - name: data-permission-fix
+              image: busybox
+              command: ["/bin/chmod","-R","777", "/bitnami/redis/data"]
+              volumeMounts:
+              - name: data
+                mountPath: /bitnami/redis/data
+    volumeClaimTemplates:
+    - metadata:
+        name: data
+        annotations:
+          volume.beta.kubernetes.io/storage-class: "standard"
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+            requests:
+                storage: 5Gi 
